@@ -38,6 +38,9 @@ Prompts for (or takes as flags):
 Installs 17 Claude Code skills into `.claude/skills/` and scaffolding into
 `.shaktimaan/`.
 
+See [docs/GUIDE.md](docs/GUIDE.md) for a full walkthrough — first-time
+setup, the specify → implement → commit loop, and what each command does.
+
 ## Commands installed
 
 `specify-shaktimaan`, `clarify-shaktimaan`, `plan-shaktimaan`,
