@@ -46,14 +46,15 @@ def init(
     git_user_email: Optional[str] = typer.Option(None, "--git-user-email"),
 ) -> None:
     """Scaffold the shaktimaan command set and .shaktimaan/ config into DIRECTORY."""
-    overrides = {
-        "project_name": project_name or "",
-        "requirements_file": requirements_file or "",
-        "feature_tracker_file": feature_tracker_file or "",
-        "requirements_status_file": requirements_status_file or "",
-        "git_user_name": git_user_name or "",
-        "git_user_email": git_user_email or "",
+    raw = {
+        "project_name": project_name,
+        "requirements_file": requirements_file,
+        "feature_tracker_file": feature_tracker_file,
+        "requirements_status_file": requirements_status_file,
+        "git_user_name": git_user_name,
+        "git_user_email": git_user_email,
     }
+    overrides = {k: v for k, v in raw.items() if v is not None}
 
     def prompt_fn(field_name: str, default: str) -> str:
         from shaktimaan.config import FIELD_PROMPTS
@@ -65,7 +66,10 @@ def init(
     directory.mkdir(parents=True, exist_ok=True)
     install_presets(directory, config)
 
-    typer.echo(f"Installed 17 shaktimaan commands into {directory / '.claude' / 'skills'}")
+    skills_dir = directory / ".claude" / "skills"
+    installed_count = sum(1 for entry in skills_dir.iterdir() if entry.is_dir())
+
+    typer.echo(f"Installed {installed_count} shaktimaan commands into {skills_dir}")
     typer.echo(f"Config written to {directory / '.shaktimaan' / 'config.yml'}")
 
 
