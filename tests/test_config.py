@@ -1,6 +1,6 @@
 import pytest
 
-from shaktimaan.config import ConfigError, ShaktimaanConfig, load_config, save_config
+from shaktimaan.config import ConfigError, ShaktimaanConfig, collect_config, load_config, save_config
 
 SAMPLE = ShaktimaanConfig(
     project_name="Example",
@@ -32,3 +32,49 @@ def test_load_missing_key_raises_config_error(tmp_path):
 
     with pytest.raises(ConfigError, match="requirements_file"):
         load_config(path)
+
+
+DEFAULTS = {
+    "project_name": "MyProject",
+    "requirements_file": "requirements/requirements.md",
+    "feature_tracker_file": "requirements/feature-tracker.md",
+    "requirements_status_file": "docs/REQUIREMENTS-STATUS.md",
+    "git_user_name": "",
+    "git_user_email": "",
+}
+
+
+def test_collect_config_prompts_for_every_missing_field():
+    prompted_fields = []
+
+    def fake_prompt(field_name: str, default: str) -> str:
+        prompted_fields.append(field_name)
+        return DEFAULTS[field_name] or "placeholder"
+
+    config = collect_config(overrides={}, prompt_fn=fake_prompt)
+
+    assert set(prompted_fields) == {
+        "project_name",
+        "requirements_file",
+        "feature_tracker_file",
+        "requirements_status_file",
+        "git_user_name",
+        "git_user_email",
+    }
+    assert config.project_name == "MyProject"
+
+
+def test_collect_config_skips_prompting_for_overridden_fields():
+    prompted_fields = []
+
+    def fake_prompt(field_name: str, default: str) -> str:
+        prompted_fields.append(field_name)
+        return "should-not-be-used"
+
+    config = collect_config(
+        overrides={"project_name": "FromFlag", **{k: v for k, v in DEFAULTS.items() if k != "project_name"}},
+        prompt_fn=fake_prompt,
+    )
+
+    assert prompted_fields == []
+    assert config.project_name == "FromFlag"

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 from pathlib import Path
+from typing import Callable
 
 import yaml
 
@@ -48,3 +49,35 @@ def load_config(path: Path) -> ShaktimaanConfig:
         )
 
     return ShaktimaanConfig(**{field: raw[field] for field in CONFIG_FIELDS})
+
+
+FIELD_PROMPTS = {
+    "project_name": "Project name",
+    "requirements_file": "Path to the requirements file",
+    "feature_tracker_file": "Path to the feature-tracker file",
+    "requirements_status_file": "Path to the requirements-status file",
+    "git_user_name": "Git commit identity: user.name",
+    "git_user_email": "Git commit identity: user.email",
+}
+
+FIELD_DEFAULTS = {
+    "project_name": "",
+    "requirements_file": "requirements/requirements.md",
+    "feature_tracker_file": "requirements/feature-tracker.md",
+    "requirements_status_file": "docs/REQUIREMENTS-STATUS.md",
+    "git_user_name": "",
+    "git_user_email": "",
+}
+
+
+def collect_config(
+    overrides: dict[str, str],
+    prompt_fn: Callable[[str, str], str],
+) -> ShaktimaanConfig:
+    values: dict[str, str] = {}
+    for field in CONFIG_FIELDS:
+        if field in overrides:
+            values[field] = overrides[field]
+        else:
+            values[field] = prompt_fn(field, FIELD_DEFAULTS[field])
+    return ShaktimaanConfig(**values)
