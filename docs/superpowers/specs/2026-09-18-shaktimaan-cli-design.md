@@ -50,7 +50,7 @@ All commands are Claude Code skills, one directory per command
 | `new-requirements-shaktimaan` | First-time bootstrap: interactively elicit requirements (clarifying questions), write the initial versioned requirements file (v1.0.0), and seed the feature-tracker file's initial feature-area breakdown |
 | `requirements-sync-shaktimaan` | Trace a spec's requirement IDs against the PRD, keep a per-ID delivery-status file current |
 | `feature-tracker-shaktimaan` | Roll per-ID status up into a feature-area-level status snapshot |
-| `requirements-shaktimaan` | Add/edit/reconcile requirements in the single consolidated PRD file (ongoing maintenance, after `new-requirements-shaktimaan` has created it) |
+| `update-requirements-shaktimaan` | Add/edit/reconcile requirements in the single consolidated PRD file (ongoing maintenance, after `new-requirements-shaktimaan` has created it) |
 | `readme-shaktimaan` | Keep the target project's README.md (badges, setup instructions, feature-status table) current — typically wired as a `before_commit_push` hook |
 
 17 commands total.

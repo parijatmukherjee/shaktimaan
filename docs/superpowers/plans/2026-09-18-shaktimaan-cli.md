@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship `shaktimaan init [DIR]` — a Python CLI, installable via `uv tool install`, that scaffolds a 16-command spec-driven-development workflow (as Claude Code skills) into any target project, with all project-specific paths/identity resolved from a per-project config file rather than hardcoded.
+**Goal:** Ship `shaktimaan init [DIR]` — a Python CLI, installable via `uv tool install`, that scaffolds a 17-command spec-driven-development workflow (as Claude Code skills) into any target project, with all project-specific paths/identity resolved from a per-project config file rather than hardcoded.
 
 **Architecture:** A `presets/` directory inside the package holds static, generic Markdown skill files, bash helper scripts, and Markdown templates. `shaktimaan init` prompts for a small config (or takes flags), writes it to `<target>/.shaktimaan/config.yml`, and copies the preset tree verbatim into `<target>/.claude/skills/` and `<target>/.shaktimaan/`. No template-rendering/placeholder-substitution step exists — every installed skill reads `.shaktimaan/config.yml` at run time for the paths/identity it needs, so changing a path later is a one-line config edit, not a reinstall.
 
@@ -620,23 +620,60 @@ git add src/shaktimaan/presets/core/specify-shaktimaan src/shaktimaan/presets/co
 git commit -m "Port the 10 spec-kit-shaped command skills, renamed to *-shaktimaan"
 ```
 
+- [ ] **Step 6: Fix lingering `/speckit-*` cross-references in the Task 4 static assets**
+
+Task 4 ported `presets/scripts/bash/*.sh` and `presets/templates/*.md` before these 10 commands
+had their final names, so some of them still say things like `/speckit-specify` or
+`/speckit-clarify` in user-facing hint text. Now that the mapping is known, fix it:
+
+```bash
+FILES=(
+  src/shaktimaan/presets/scripts/bash/check-prerequisites.sh
+  src/shaktimaan/presets/scripts/bash/setup-tasks.sh
+  src/shaktimaan/presets/templates/checklist-template.md
+)
+
+sed_args=()
+for old in "${ORDERED_OLD[@]}"; do
+  sed_args+=(-e "s#/$old#/${RENAME[$old]}#g")
+done
+
+for f in "${FILES[@]}"; do
+  sed -i "${sed_args[@]}" "$f"
+done
+
+grep -rn '/speckit-' src/shaktimaan/presets/scripts src/shaktimaan/presets/templates || echo "clean"
+```
+
+(`ORDERED_OLD` and `RENAME` are the same associative array and ordered list from Step 3 above —
+reuse them in the same shell session, or redeclare identically if running this step separately.)
+
+Expected: the final `grep` prints `clean` (no remaining `/speckit-` cross-references). If it
+finds any, they're in a file this step didn't anticipate — add that file to `FILES` and re-run.
+
+```bash
+git add src/shaktimaan/presets/scripts src/shaktimaan/presets/templates
+git commit -m "Fix lingering /speckit-* cross-references now that commands have final names"
+```
+
 ---
 
-### Task 6: Write the 6 config-aware command skills
+### Task 6: Write the 7 config-aware command skills
 
-Unlike Task 5's batch, these six read `.shaktimaan/config.yml` at runtime instead of taking any project-specific path as given — write their full final content directly (no source-porting script; the content below **is** the deliverable).
+Unlike Task 5's batch, these seven read `.shaktimaan/config.yml` at runtime instead of taking any project-specific path as given — write their full final content directly (no source-porting script; the content below **is** the deliverable).
 
 **Files:**
 - Create: `src/shaktimaan/presets/core/commit-push-shaktimaan/SKILL.md`
 - Create: `src/shaktimaan/presets/core/prioritise-next-shaktimaan/SKILL.md`
+- Create: `src/shaktimaan/presets/core/new-requirements-shaktimaan/SKILL.md`
 - Create: `src/shaktimaan/presets/core/requirements-sync-shaktimaan/SKILL.md`
 - Create: `src/shaktimaan/presets/core/feature-tracker-shaktimaan/SKILL.md`
-- Create: `src/shaktimaan/presets/core/requirements-shaktimaan/SKILL.md`
+- Create: `src/shaktimaan/presets/core/update-requirements-shaktimaan/SKILL.md`
 - Create: `src/shaktimaan/presets/core/readme-shaktimaan/SKILL.md`
 - Create: `tests/test_presets_core_original.py`
 
 **Interfaces:**
-- Produces: 6 skill directories under `src/shaktimaan/presets/core/`, consumed by Task 8's `install_presets`.
+- Produces: 7 skill directories under `src/shaktimaan/presets/core/`, consumed by Task 8's `install_presets`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -649,9 +686,10 @@ CORE = Path(__file__).parent.parent / "src" / "shaktimaan" / "presets" / "core"
 NAMES = [
     "commit-push-shaktimaan",
     "prioritise-next-shaktimaan",
+    "new-requirements-shaktimaan",
     "requirements-sync-shaktimaan",
     "feature-tracker-shaktimaan",
-    "requirements-shaktimaan",
+    "update-requirements-shaktimaan",
     "readme-shaktimaan",
 ]
 
@@ -786,21 +824,23 @@ Otherwise derive a concise message from the staged/unstaged diff.
 ```markdown
 ---
 name: "prioritise-next-shaktimaan"
-description: "Use when asked which feature to spec next, to prioritize the backlog, or for a ready-to-paste feature description for specify-shaktimaan — reads the project's requirements file and feature tracker, cross-references specs/ and the requirements-status file, and recommends the smallest slice that is a complete, production-deployable increment."
+description: "Use when asked which feature to spec next, to prioritize the backlog, or for a ready-to-paste feature description for specify-shaktimaan — reads the project's requirements file, feature tracker, constitution, and any prior research, cross-references specs/ and the requirements-status file, and recommends the smallest slice that is a complete, production-deployable increment."
 model: sonnet
 ---
 
 # Prioritizing the next spec
 
-This is a **read-only recommendation** skill — it doesn't write to any requirements/tracker/spec
-file. It answers "what should `specify-shaktimaan` build next?" by combining four sources of
+This is a **read-only recommendation** skill — it doesn't write to any requirements, tracker, or
+spec file. It answers "what should `specify-shaktimaan` build next?" by combining six sources of
 truth, each owned elsewhere:
 
 | Source | What it gives you |
 |---|---|
 | `requirements_file` (from `.shaktimaan/config.yml`) | Requirement IDs, Priority (MVP/Phase 2/Later), and the full requirement text |
 | `feature_tracker_file` (from `.shaktimaan/config.yml`) | Feature-area status (Not Started/In Progress/Delivered/Blocked) + any "Recommended build order" section |
+| `.shaktimaan/memory/constitution.md` | Governing principles that can reorder priority (if `constitution-shaktimaan` has been run) |
 | `specs/` | Which slices already have a spec started or complete |
+| `specs/*/research.md` | Technical findings/constraints from prior `plan-shaktimaan` runs that may affect what's feasible next |
 | `requirements_status_file` (from `.shaktimaan/config.yml`) | Per-ID delivery status + any "Deferred / Gap follow-ups" section |
 
 ## Steps
@@ -808,28 +848,39 @@ truth, each owned elsewhere:
 1. Read `.shaktimaan/config.yml` for `requirements_file`, `feature_tracker_file`, and
    `requirements_status_file`. If any is unset, tell the user this project hasn't configured
    requirements tracking and stop — this skill has nothing to prioritize against without it.
-2. Read `feature_tracker_file` in full — its status summary and any "Recommended build order"
+2. Read `.shaktimaan/memory/constitution.md` if it exists. Note any principle that bears on
+   prioritization order — e.g. a "security first" or "mobile first" principle, or explicit
+   sequencing guidance. If the file doesn't exist, skip silently: not every project runs
+   `constitution-shaktimaan` before this, and that's fine.
+3. Read `feature_tracker_file` in full — its status summary and any "Recommended build order"
    section. This is the primary ranking signal; don't re-derive priority from scratch.
-3. Read `requirements_file` in full — Priority tags, the full requirement text, and any
+4. Read `requirements_file` in full — Priority tags, the full requirement text, and any
    acceptance-scenario section. The tracker tells you *which* area ranks first; this file is
-   what steps 6 and 7 below actually test candidates against.
-4. Read `requirements_status_file` if it exists, specifically any "Deferred / Gap follow-ups"
+   what steps 8 and 9 below actually test candidates against.
+5. Read `requirements_status_file` if it exists, specifically any "Deferred / Gap follow-ups"
    section — requirement IDs a prior spec touched but didn't fully deliver. A gap that fits
    inside the next candidate feature area should be surfaced as something to fold in.
-5. List `specs/` to see what already has a directory — don't recommend a slice that's already
+6. List `specs/` to see what already has a directory — don't recommend a slice that's already
    been speced. A tracker status of "In Progress" only means *some* spec exists for that area,
    not that the whole area is covered — check the spec's own completion state rather than
    skipping the area outright.
-6. Rank remaining candidates:
+7. Read any `specs/*/research.md` files found in step 6. These carry technical findings or
+   constraints discovered during a prior feature's planning — e.g. "library X doesn't support Y,"
+   or a dependency that turned out to be harder than expected. If one bears on a candidate area
+   for this recommendation (makes it easier, harder, or reveals a new dependency), factor it in.
+8. Rank remaining candidates:
    - Prefer **Not Started** feature areas over **In Progress** ones.
    - Within Not Started areas, use the tracker's build-order signal first, then MVP-priority
      requirement count as a tiebreaker.
+   - If a constitution principle from step 2 clearly favors one candidate over another (e.g. a
+     security-first principle and a security-related area is in contention), let it move that
+     area up — but say so explicitly in the recommendation rather than silently reordering.
    - An area marked **Blocked** is never the recommendation — surface the blocker instead and
      move to the next candidate.
    - If every Not Started area is blocked, say so explicitly rather than picking one anyway.
-7. **Size the slice to the smallest unit that is still a complete, production-deployable
-   increment.** Once step 6 picks a candidate feature area, do not default to speccing that
-   area's entire requirement set in one spec. Using the requirement text read in step 3, find the
+9. **Size the slice to the smallest unit that is still a complete, production-deployable
+   increment.** Once step 8 picks a candidate feature area, do not default to speccing that
+   area's entire requirement set in one spec. Using the requirement text read in step 4, find the
    smallest subset of its requirement IDs that clears all three bars below — this is a size
    *ceiling*, not a target:
    - **Deployable as-is**: shipping to production with only this subset built leaves no broken,
@@ -837,20 +888,22 @@ truth, each owned elsewhere:
    - **Independently verifiable**: the subset maps to at least one acceptance scenario that can
      pass **end-to-end** on its own.
    - **No forward dependency on undelivered work**: nothing in the subset requires a requirement
-     ID that lives in a Not Started or Blocked area to actually function (see step 8).
+     ID that lives in a Not Started or Blocked area to actually function (see step 10).
    - If no subset of the top-ranked area clears all three bars, say so and either scope the
-     whole area or fall through to the next candidate from step 6.
-8. Cross-check dependency shape: read the requirement text for the sized subset's IDs for
-   references to other areas. If a dependency is itself Not Started or Blocked, either fold its
-   minimum slice into this one or name the dependency order explicitly in the recommendation.
-9. Produce a single recommendation (not a ranked list):
-   - **Feature area(s)** and the exact requirement IDs in scope.
-   - **Why this one now** — cite the build-order/priority signal and why this subset is the
-     smallest slice that still clears the three deployability bars.
-   - **What's explicitly left out and why**.
-   - **Any Deferred / Gap follow-ups to fold in**, if step 4 found ones that plausibly fit.
-   - **A ready-to-paste feature description** — 2-4 plain-language WHAT/WHY sentences, no
-     implementation detail, so the user can hand it straight to `specify-shaktimaan`.
+     whole area or fall through to the next candidate from step 8.
+10. Cross-check dependency shape: read the requirement text for the sized subset's IDs for
+    references to other areas. If a dependency is itself Not Started or Blocked, either fold its
+    minimum slice into this one or name the dependency order explicitly in the recommendation.
+11. Produce a single recommendation (not a ranked list):
+    - **Feature area(s)** and the exact requirement IDs in scope.
+    - **Why this one now** — cite the build-order/priority signal, any constitution principle
+      that influenced the choice, and why this subset is the smallest slice that still clears
+      the three deployability bars.
+    - **Any relevant prior research** from step 7 that affects how this slice should be scoped.
+    - **What's explicitly left out and why**.
+    - **Any Deferred / Gap follow-ups to fold in**, if step 5 found ones that plausibly fit.
+    - **A ready-to-paste feature description** — 2-4 plain-language WHAT/WHY sentences, no
+      implementation detail, so the user can hand it straight to `specify-shaktimaan`.
 
 ## What this skill does NOT do
 
@@ -860,9 +913,67 @@ truth, each owned elsewhere:
   `feature-tracker-shaktimaan` rather than overriding it silently.
 - Does not invent requirement IDs or requirement text — every claim traces back to
   `requirements_file`.
+- Does not treat the constitution as an override of MVP-priority — it's a tiebreaker/signal
+  among Not-Started candidates, not a reason to jump ahead of a Blocked or already-In-Progress
+  area's own status.
 ```
 
-- [ ] **Step 5: Create `src/shaktimaan/presets/core/requirements-sync-shaktimaan/SKILL.md`**
+- [ ] **Step 5: Create `src/shaktimaan/presets/core/new-requirements-shaktimaan/SKILL.md`**
+
+```markdown
+---
+name: "new-requirements-shaktimaan"
+description: "Use when bootstrapping a project's requirements from scratch — the first time this project defines its requirements file. Interactively elicits requirements via clarifying questions, writes a versioned structured requirements file, and seeds the feature-tracker file's initial feature-area breakdown."
+model: sonnet
+---
+
+# Bootstrapping requirements from scratch
+
+This is the **first-time creation** flow — for ongoing edits after `requirements_file` exists,
+use `update-requirements-shaktimaan` instead.
+
+## Steps
+
+1. Read `.shaktimaan/config.yml` for `project_name`, `requirements_file`, and
+   `feature_tracker_file`. If the config file doesn't exist, **STOP** and tell the user to run
+   `shaktimaan init` first.
+2. Check whether `requirements_file` already exists. If it does, **STOP** and tell the user to
+   use `update-requirements-shaktimaan` for edits instead — this flow only runs once, to create it.
+3. Take the user's freeform description of what they want to build — however much or little
+   detail they gave.
+4. Ask clarifying questions where the input is ambiguous or underspecified: actor/user types,
+   MVP vs. later scope, anything with multiple reasonable interpretations. Don't over-ask — only
+   ask what materially changes scope or structure. Present them together, then wait for answers.
+5. Organize the elicited requirements into capability areas (feature areas) — group related
+   behaviors together (e.g. "user identity and access," "core workflow"). Use the same structure
+   `update-requirements-shaktimaan` and `feature-tracker-shaktimaan` expect going forward: functional
+   and non-functional requirements as separate ID namespaces (`FR-xxx`, `NFR-xxx`), sequential
+   within each area's number block, each tagged **MVP** / **Phase 2** / **Later** priority.
+6. Write `requirements_file`:
+   - A short overview section (what the project is, 2-3 sentences, using `project_name`).
+   - Priority definitions (MVP / Phase 2 / Later — the same three tiers `update-requirements-shaktimaan`
+     expects).
+   - One functional-requirement table per capability area.
+   - A non-functional-requirements section, same area-grouped structure.
+   - A version header, starting at **v1.0.0** — this is the first version;
+     `update-requirements-shaktimaan` owns bumping it from here on.
+   - A Changelog section with one entry: "v1.0.0 — initial requirements."
+7. Write `feature_tracker_file` — the initial feature-area status snapshot: one row per
+   capability area from steps 5/6, all starting at status **Not Started**, plus a Summary table
+   and a per-area detail section for each. This is the same file `feature-tracker-shaktimaan`
+   maintains going forward; this command only creates its first version.
+8. Report both file paths and a short summary of the capability areas created.
+
+## What this skill does NOT do
+
+- Does not run if `requirements_file` already exists — that's `update-requirements-shaktimaan`'s job
+  (editing, adding, reconciling, version-bumping).
+- Does not create `specs/` directories or run any spec-kit-shaped command — that starts with
+  `prioritise-next-shaktimaan` or `specify-shaktimaan` once requirements exist.
+- Does not write `.shaktimaan/memory/constitution.md` — that's `constitution-shaktimaan`'s job.
+```
+
+- [ ] **Step 6: Create `src/shaktimaan/presets/core/requirements-sync-shaktimaan/SKILL.md`**
 
 ```markdown
 ---
@@ -885,7 +996,7 @@ skill keeps the two connected without letting either drift silently out of sync.
 3. Search `requirements_file` for every requirement ID that spec's described behavior implements
    or partially implements. Be specific — cite IDs, don't summarize.
 4. **If the spec describes behavior with no matching requirement:** stop and flag it to the
-   user. Either it's a legitimate new requirement — use `requirements-shaktimaan` to propose
+   user. Either it's a legitimate new requirement — use `update-requirements-shaktimaan` to propose
    adding it before treating it as in scope — or it's scope creep relative to the requirements
    file — surface that explicitly rather than quietly implementing it. Do not invent a
    requirement mapping just to make the spec look covered.
@@ -922,7 +1033,7 @@ corresponding bullet was removed — if it wasn't, remove it as part of the sync
 ## What this skill does NOT do
 
 - It does not edit `requirements_file` — that file's content changes only via
-  `requirements-shaktimaan`, with explicit user confirmation for new requirements.
+  `update-requirements-shaktimaan`, with explicit user confirmation for new requirements.
 - It does not mark something `Done` from the spec alone — only mark `Done` once told the
   implementation is merged/verified.
 - It does not update `feature_tracker_file` directly — that's owned by
@@ -937,7 +1048,7 @@ covered-by-some-spec vs. not yet referenced, grouped by Priority. If the status 
 exist yet, say so — it means no spec work has been reconciled yet, not that everything is done.
 ```
 
-- [ ] **Step 6: Create `src/shaktimaan/presets/core/feature-tracker-shaktimaan/SKILL.md`**
+- [ ] **Step 7: Create `src/shaktimaan/presets/core/feature-tracker-shaktimaan/SKILL.md`**
 
 ```markdown
 ---
@@ -1004,11 +1115,11 @@ Read `feature_tracker_file` directly and report by status group, MVP-priority ar
 finer per-requirement detail is needed, cross-reference `requirements_status_file` if it exists.
 ```
 
-- [ ] **Step 7: Create `src/shaktimaan/presets/core/requirements-shaktimaan/SKILL.md`**
+- [ ] **Step 8: Create `src/shaktimaan/presets/core/update-requirements-shaktimaan/SKILL.md`**
 
 ```markdown
 ---
-name: "requirements-shaktimaan"
+name: "update-requirements-shaktimaan"
 description: "Use when adding, editing, removing, or reconciling requirements or acceptance scenarios in this project's requirements file, or when bumping its version"
 model: sonnet
 ---
@@ -1075,7 +1186,7 @@ change that adds, removes, or materially changes a requirement:
 3. Do not edit past changelog entries to reflect new changes — append a new entry.
 ```
 
-- [ ] **Step 8: Create `src/shaktimaan/presets/core/readme-shaktimaan/SKILL.md`**
+- [ ] **Step 9: Create `src/shaktimaan/presets/core/readme-shaktimaan/SKILL.md`**
 
 ```markdown
 ---
@@ -1128,16 +1239,16 @@ model: haiku
 - Does not modify `feature_tracker_file` or any other requirements file — read-only there.
 ```
 
-- [ ] **Step 9: Run test to verify it passes**
+- [ ] **Step 10: Run test to verify it passes**
 
 Run: `uv run pytest tests/test_presets_core_original.py -v`
 Expected: PASS
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
-git add src/shaktimaan/presets/core/commit-push-shaktimaan src/shaktimaan/presets/core/prioritise-next-shaktimaan src/shaktimaan/presets/core/requirements-sync-shaktimaan src/shaktimaan/presets/core/feature-tracker-shaktimaan src/shaktimaan/presets/core/requirements-shaktimaan src/shaktimaan/presets/core/readme-shaktimaan tests/test_presets_core_original.py
-git commit -m "Write the 6 config-aware command skills (commit-push, prioritise-next, requirements bundle)"
+git add src/shaktimaan/presets/core/commit-push-shaktimaan src/shaktimaan/presets/core/prioritise-next-shaktimaan src/shaktimaan/presets/core/new-requirements-shaktimaan src/shaktimaan/presets/core/requirements-sync-shaktimaan src/shaktimaan/presets/core/feature-tracker-shaktimaan src/shaktimaan/presets/core/update-requirements-shaktimaan src/shaktimaan/presets/core/readme-shaktimaan tests/test_presets_core_original.py
+git commit -m "Write the 7 config-aware command skills (commit-push, prioritise-next, requirements bundle)"
 ```
 
 ---
@@ -1345,13 +1456,13 @@ SAMPLE_CONFIG = ShaktimaanConfig(
 )
 
 
-def test_install_presets_copies_all_16_skills(tmp_path):
+def test_install_presets_copies_all_17_skills(tmp_path):
     install_presets(tmp_path, SAMPLE_CONFIG)
 
     skills_dir = tmp_path / ".claude" / "skills"
     installed = sorted(p.name for p in skills_dir.iterdir())
 
-    assert len(installed) == 16
+    assert len(installed) == 17
     assert "specify-shaktimaan" in installed
     assert "commit-push-shaktimaan" in installed
     assert (skills_dir / "specify-shaktimaan" / "SKILL.md").exists()
@@ -1371,7 +1482,7 @@ def test_install_presets_is_idempotent(tmp_path):
     install_presets(tmp_path, SAMPLE_CONFIG)  # must not raise
 
     skills_dir = tmp_path / ".claude" / "skills"
-    assert len(list(skills_dir.iterdir())) == 16
+    assert len(list(skills_dir.iterdir())) == 17
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -1431,7 +1542,7 @@ Expected: PASS
 
 ```bash
 git add src/shaktimaan/installer.py tests/test_installer.py
-git commit -m "Add install_presets: copies the 16 skills + .shaktimaan scaffolding into a target project"
+git commit -m "Add install_presets: copies the 17 skills + .shaktimaan scaffolding into a target project"
 ```
 
 ---
@@ -1545,7 +1656,7 @@ def init(
     directory.mkdir(parents=True, exist_ok=True)
     install_presets(directory, config)
 
-    typer.echo(f"Installed 16 shaktimaan commands into {directory / '.claude' / 'skills'}")
+    typer.echo(f"Installed 17 shaktimaan commands into {directory / '.claude' / 'skills'}")
     typer.echo(f"Config written to {directory / '.shaktimaan' / 'config.yml'}")
 ```
 
@@ -1628,13 +1739,13 @@ shaktimaan init . \
   --requirements-status-file docs/REQUIREMENTS-STATUS.md \
   --git-user-name "Test User" \
   --git-user-email test@example.com
-ls .claude/skills | wc -l   # expect 16
+ls .claude/skills | wc -l   # expect 17
 cat .shaktimaan/config.yml
 cd -
 rm -rf /tmp/shaktimaan-smoke-test
 ```
 
-Expected: `ls .claude/skills | wc -l` prints `16`, and `config.yml` shows the six fields with the
+Expected: `ls .claude/skills | wc -l` prints `17`, and `config.yml` shows the six fields with the
 values just passed.
 
 - [ ] **Step 5: Commit**
@@ -1687,7 +1798,7 @@ Prompts for (or takes as flags):
 | `--requirements-status-file` | Path to your per-requirement delivery-status file |
 | `--git-user-name` / `--git-user-email` | The identity `commit-push-shaktimaan` verifies before committing |
 
-Installs 16 Claude Code skills into `.claude/skills/` and scaffolding into
+Installs 17 Claude Code skills into `.claude/skills/` and scaffolding into
 `.shaktimaan/`.
 
 ## Commands installed
@@ -1696,9 +1807,9 @@ Installs 16 Claude Code skills into `.claude/skills/` and scaffolding into
 `tasks-shaktimaan`, `analyze-shaktimaan`, `checklist-shaktimaan`,
 `implement-shaktimaan`, `converge-shaktimaan`, `taskstoissues-shaktimaan`,
 `constitution-shaktimaan`, `commit-push-shaktimaan`,
-`prioritise-next-shaktimaan`, `requirements-sync-shaktimaan`,
-`feature-tracker-shaktimaan`, `requirements-shaktimaan`,
-`readme-shaktimaan`.
+`prioritise-next-shaktimaan`, `new-requirements-shaktimaan`,
+`requirements-sync-shaktimaan`, `feature-tracker-shaktimaan`,
+`update-requirements-shaktimaan`, `readme-shaktimaan`.
 
 ## Status
 
@@ -1718,5 +1829,5 @@ git commit -m "Write usage README: install, init flags, command list"
 
 - **Spec coverage:** every design-doc section has a task — command set (Tasks 5-6), configurability (Tasks 2-3, and the runtime-lookup correction noted in Global Constraints), target-project layout (Task 8), packaging (Tasks 1, 10), repo layout (Tasks 1-9), provenance/licensing (already committed pre-plan), open question resolution (Task 7 ships the bundle unconditionally, matching "always included").
 - **Design correction carried into this plan:** the design doc's `render.py`/`{{PLACEHOLDER}}` wording is superseded by the runtime-config-lookup approach (see Global Constraints) — simpler, and actually matches the design doc's own stated rationale better than literal templating would have.
-- **No placeholders:** every task's content is either a real script/config/code block or, for the 6 config-aware skills, the full final file content.
+- **No placeholders:** every task's content is either a real script/config/code block or, for the 7 config-aware skills, the full final file content.
 - **Type/name consistency checked:** `ShaktimaanConfig` field names (`project_name`, `requirements_file`, `feature_tracker_file`, `requirements_status_file`, `git_user_name`, `git_user_email`) are identical across Tasks 2, 3, 6 (skill prose), 8, 9, and the CLI flags in Task 9.
