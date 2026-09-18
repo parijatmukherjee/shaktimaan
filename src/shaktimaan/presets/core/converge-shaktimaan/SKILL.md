@@ -2,7 +2,6 @@
 name: "converge-shaktimaan"
 description: "Assess the current codebase against the feature's spec, plan, and tasks, then append any remaining unbuilt work as new tasks to tasks.md so implement can complete it."
 compatibility: "Requires .shaktimaan/ scaffolding (run `shaktimaan init` first)"
-metadata:
 user-invocable: true
 disable-model-invocation: false
 model: sonnet
@@ -76,8 +75,9 @@ of the code relative to the feature's artifacts — no git, no branch comparison
 
 **APPEND-ONLY, NEVER REWRITE**: The command's only writes are appending a new
 `## Phase N: Convergence` section to `tasks.md`, and (Step 7a) appending or updating this
-feature's own bullet(s) in `docs/REQUIREMENTS-STATUS.md`'s `## Deferred / Gap follow-ups`
-section, if that file exists. It MUST NOT:
+feature's own bullet(s) in the requirements-status file (from `.shaktimaan/config.yml`'s
+`requirements_status_file`)'s `## Deferred / Gap follow-ups` section, if that file exists.
+It MUST NOT:
 
 - modify `spec.md` or `plan.md` in any way;
 - rewrite, renumber, reorder, or delete any existing task (including tasks from a prior
@@ -266,12 +266,13 @@ Append to the **end** of `tasks.md`, per the append contract:
 
 The tasks appended in Step 7 close gaps **within this feature's own scope**. Separately, check
 for requirement gaps that fall **outside** this feature's scope — i.e., an FR-/NFR- ID this
-feature's spec cites (per `docs/REQUIREMENTS-STATUS.md`, if present) that this convergence run
-confirms is only partially or intentionally not fully satisfied by design (explicitly narrowed,
-deferred, or scoped down — not simply closed by the tasks just appended).
+feature's spec cites (per the requirements-status file — from `.shaktimaan/config.yml`'s
+`requirements_status_file` — if present) that this convergence run confirms is only partially
+or intentionally not fully satisfied by design (explicitly narrowed, deferred, or scoped down —
+not simply closed by the tasks just appended).
 
-- If `docs/REQUIREMENTS-STATUS.md` does not exist, skip this step silently — it's created by the
-  `spec-kit-requirements-sync` skill, not by this command.
+- If the requirements-status file does not exist, skip this step silently — it's created by the
+  `requirements-sync-shaktimaan` skill, not by this command.
 - If it exists, ensure it has a `## Deferred / Gap follow-ups` section (create it, after the main
   table and any "Not yet referenced" section, if missing).
 - For each such ID, add or update one bullet: `- FR-xxx: <what remains unaddressed and why> (surfaced by convergence on specs/<NNN>-<slug>)`.
@@ -279,7 +280,7 @@ deferred, or scoped down — not simply closed by the tasks just appended).
   matching this feature's convergence run. Removal happens only when `/specify-shaktimaan` folds an
   entry into a new feature's scope (that skill's own responsibility).
 - This is the only file this command writes to outside `tasks.md`. It does not touch that file's
-  Status column or main table — those remain owned by `spec-kit-requirements-sync`.
+  Status column or main table — those remain owned by `requirements-sync-shaktimaan`.
 
 ### 8. Provide Next Actions (Handoff)
 

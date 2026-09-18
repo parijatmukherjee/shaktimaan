@@ -3,7 +3,6 @@ name: "checklist-shaktimaan"
 description: "Generate a custom checklist for the current feature based on user requirements."
 argument-hint: "Domain or focus area for the checklist"
 compatibility: "Requires .shaktimaan/ scaffolding (run `shaktimaan init` first)"
-metadata:
 user-invocable: true
 disable-model-invocation: false
 model: sonnet

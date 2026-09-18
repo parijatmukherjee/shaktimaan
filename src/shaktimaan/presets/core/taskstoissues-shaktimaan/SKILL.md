@@ -3,7 +3,6 @@ name: "taskstoissues-shaktimaan"
 description: "Convert existing tasks into actionable, dependency-ordered GitHub issues for the feature based on available design artifacts."
 argument-hint: "Optional filter or label for GitHub issues"
 compatibility: "Requires .shaktimaan/ scaffolding (run `shaktimaan init` first)"
-metadata:
 user-invocable: true
 disable-model-invocation: false
 model: haiku

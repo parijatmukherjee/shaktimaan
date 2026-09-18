@@ -3,7 +3,6 @@ name: "clarify-shaktimaan"
 description: "Identify underspecified areas in the current feature spec by asking up to 5 highly targeted clarification questions and encoding answers back into the spec."
 argument-hint: "Optional areas to clarify in the spec"
 compatibility: "Requires .shaktimaan/ scaffolding (run `shaktimaan init` first)"
-metadata:
 user-invocable: true
 disable-model-invocation: false
 model: sonnet

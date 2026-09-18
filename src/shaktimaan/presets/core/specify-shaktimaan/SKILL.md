@@ -3,7 +3,6 @@ name: "specify-shaktimaan"
 description: "Create or update the feature specification from a natural language feature description."
 argument-hint: "Describe the feature you want to specify"
 compatibility: "Requires .shaktimaan/ scaffolding (run `shaktimaan init` first)"
-metadata:
 user-invocable: true
 disable-model-invocation: false
 model: sonnet
@@ -115,7 +114,8 @@ Given that feature description, do this:
 
 5. **IF EXISTS**: Load `.shaktimaan/memory/constitution.md` for project principles and governance constraints.
 
-6. **Check for deferred requirement gaps**: If `docs/REQUIREMENTS-STATUS.md` exists, read its
+6. **Check for deferred requirement gaps**: If the requirements-status file (from
+   `.shaktimaan/config.yml`'s `requirements_status_file`) exists, read its
    `## Deferred / Gap follow-ups` section (populated by `/converge-shaktimaan` when a prior feature's
    convergence run surfaces an FR-/NFR- ID that was only partially or not addressed). For any entry
    whose requirement ID or description plausibly overlaps this feature's description:

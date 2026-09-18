@@ -3,7 +3,6 @@ name: "constitution-shaktimaan"
 description: "Create or update the project constitution from interactive or provided principle inputs."
 argument-hint: "Principles or values for the project constitution"
 compatibility: "Requires .shaktimaan/ scaffolding (run `shaktimaan init` first)"
-metadata:
 user-invocable: true
 disable-model-invocation: false
 model: sonnet
