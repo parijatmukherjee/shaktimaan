@@ -1,6 +1,6 @@
 ---
 name: "converge-shaktimaan"
-description: "Assess the current codebase against the feature's spec, plan, and tasks, then append any remaining unbuilt work as new tasks to tasks.md so implement can complete it."
+description: "Assess the current codebase against the feature's spec, plan, and tasks, then append any remaining unbuilt work as new tasks to tasks.md so implement can complete it. Invoked automatically at the end of each implement-shaktimaan round as part of its convergence loop, and independently runnable on its own for an ad-hoc status check."
 compatibility: "Requires .shaktimaan/ scaffolding (run `shaktimaan init` first)"
 user-invocable: true
 disable-model-invocation: false
@@ -70,6 +70,13 @@ of remaining work as a new, traceable task** at the bottom of `tasks.md` so that
 
 This is **not** a diff tool and does **not** track changes. It assesses the present state
 of the code relative to the feature's artifacts — no git, no branch comparison, no history.
+
+**Two ways this runs:** `/implement-shaktimaan` invokes this command automatically at the end
+of every round in its own convergence loop, re-running the newly appended tasks itself and
+calling this command again until it reports `converged` (capped at 5 rounds). It's also fully
+standalone — run it by hand any time you want a status check without a full implementation
+pass (after a manual code change, or just to see where a feature stands). The assessment and
+outcome are identical either way; only who acts on the result differs (see Step 8).
 
 ## Operating Constraints
 
@@ -284,10 +291,12 @@ not simply closed by the tasks just appended).
 
 ### 8. Provide Next Actions (Handoff)
 
-- On `tasks_appended`: state how many tasks were appended under which phase, and recommend
-  running `/implement-shaktimaan` to complete them; note that a follow-up converge
-  run will find fewer or no remaining items.
-- On `converged`: recommend proceeding to review / opening a PR. No further implement pass
+- On `tasks_appended`: state how many tasks were appended under which phase. If this run was
+  invoked automatically as part of `/implement-shaktimaan`'s convergence loop, say so and note
+  that it will pick these up and continue on its own — no action needed. If this was a
+  standalone run, recommend running `/implement-shaktimaan` to complete them; note that its own
+  automatic convergence loop will then re-check and continue until clean or its 5-round cap.
+- On `converged`: recommend proceeding to `/commit-push-shaktimaan`. No further implement pass
   is needed for this feature's specified scope.
 - If Step 7a recorded any `## Deferred / Gap follow-ups` bullets, state how many and note that the
   next `/specify-shaktimaan` run will surface them for consideration when scoping the next feature.
