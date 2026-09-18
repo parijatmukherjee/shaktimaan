@@ -11,8 +11,12 @@ licensed) — same workflow shape, own implementation, own commands.
 
 ## Install
 
+Not published to PyPI yet — install from a local clone of this repo:
+
 ```bash
-uv tool install shaktimaan-cli
+git clone git@github.com:parijatmukherjee/shaktimaan.git
+cd shaktimaan
+uv tool install .
 ```
 
 ## Usage
@@ -47,3 +51,7 @@ Installs 17 Claude Code skills into `.claude/skills/` and scaffolding into
 ## Status
 
 v1: Claude Code only. See `docs/superpowers/specs/` for the design doc.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
