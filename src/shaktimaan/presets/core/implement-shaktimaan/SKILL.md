@@ -1,6 +1,6 @@
 ---
 name: "implement-shaktimaan"
-description: "Execute the implementation plan by processing and executing all tasks defined in tasks.md"
+description: "Execute the implementation plan by processing and executing all tasks defined in tasks.md, then automatically loop with convergence checks until fully converged or a 5-round safety cap is hit"
 argument-hint: "Optional implementation guidance or task filter"
 compatibility: "Requires .shaktimaan/ scaffolding (run `shaktimaan init` first)"
 user-invocable: true
@@ -180,6 +180,34 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/tasks-shaktimaan` first to regenerate the task list.
 
+## Automatic Convergence Loop
+
+Once every task from the current batch is marked `[X]` (step 9 above), do not stop and wait for
+a separate `/converge-shaktimaan` invocation — verify convergence automatically:
+
+1. Invoke `/converge-shaktimaan` now, the same way you invoke an extension hook:
+   ```
+   EXECUTE_COMMAND: converge-shaktimaan
+   ```
+   Wait for it to finish before continuing. Converge-shaktimaan's own before/after hooks (e.g.
+   `after_converge` re-syncing requirements status) run normally as part of this — nothing about
+   this loop skips or duplicates them.
+2. Read its outcome:
+   - **`tasks_appended`** — it added a new `## Phase N: Convergence` section to tasks.md. Go
+     back to step 6 (Execute implementation) and run only the newly appended tasks, then repeat
+     step 1 of this loop.
+   - **`converged`** — it reported "✅ Converged — the implementation satisfies the spec, plan,
+     and tasks." and did not modify tasks.md. The loop is done — proceed to Mandatory
+     Post-Execution Hooks below.
+3. **Cap at 5 rounds.** Count each time this loop returns to step 1 after a `tasks_appended`
+   outcome. If round 5 finishes and convergence still finds gaps, stop looping automatically:
+   report to the user that convergence hasn't completed after 5 automatic rounds, summarize the
+   still-outstanding findings from that last convergence report, and let them decide whether to
+   continue manually (re-run `/implement-shaktimaan`) or investigate first. Do not attempt a 6th
+   round on your own.
+4. Reaching `converged` does **not** by itself trigger `/commit-push-shaktimaan` — that stays a
+   separate, deliberate step the user invokes explicitly.
+
 ## Mandatory Post-Execution Hooks
 
 **You MUST complete this section before reporting completion to the user.**
@@ -222,6 +250,9 @@ Report final status with summary of completed work.
 ## Done When
 
 - [ ] All tasks in tasks.md completed and marked `[X]`
+- [ ] Automatic Convergence Loop run, ending in either a `converged` outcome or the 5-round cap
+      being hit and reported to the user
 - [ ] Implementation validated against specification, plan, and test coverage
 - [ ] Extension hooks dispatched or skipped according to the rules in Mandatory Post-Execution Hooks above
-- [ ] Completion reported to user with summary of completed work
+- [ ] Completion reported to user with summary of completed work, including the convergence
+      outcome (converged, or capped with outstanding findings)

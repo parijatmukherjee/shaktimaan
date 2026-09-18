@@ -103,19 +103,28 @@ plan-shaktimaan
 tasks-shaktimaan  ──▶  analyze-shaktimaan (optional, cross-checks
         │                spec/plan/tasks for consistency)
         ▼
-implement-shaktimaan
-        │
-        ▼
-converge-shaktimaan
-        │
-        ├── gaps found → back to implement-shaktimaan
-        │
-        └── converged  → commit-push-shaktimaan
-                                │
-                                ▼
-                    back to prioritise-next-shaktimaan
-                       for the next slice
+┌─────────────────────────────────┐
+│ implement-shaktimaan             │
+│         │                        │
+│         ▼                        │
+│ converge-shaktimaan (automatic)  │
+│         │                        │
+│  tasks_appended ──▶ run new      │
+│         ▲            tasks, then │
+│         └────────────loop back   │
+│                       (max 5x)   │
+└─────────────────┬─────────────────┘
+                   │ converged
+                   ▼
+          commit-push-shaktimaan
+                   │
+                   ▼
+       back to prioritise-next-shaktimaan
+              for the next slice
 ```
+
+`implement-shaktimaan` drives that inner loop itself — you invoke it once
+per slice, not once per convergence round.
 
 ### `/prioritise-next-shaktimaan` — what to build next
 
@@ -157,19 +166,38 @@ for tasks that can run in parallel.
 A non-destructive consistency check across `spec.md`, `plan.md`, and
 `tasks.md` — catches contradictions or gaps before you start implementing.
 
-### `/implement-shaktimaan` — build it
+### `/implement-shaktimaan` — build it, until it's actually done
 
 Executes `tasks.md` phase by phase, test-first, marking each task `[X]` as
 it completes. Halts on a non-parallel task failure rather than plowing
 ahead.
 
-### `/converge-shaktimaan` — check it's actually done
+Once the current batch of tasks is done, it doesn't just stop — it
+automatically runs a convergence check (the same assessment
+`/converge-shaktimaan` does) and loops:
 
-Assesses what got built against the spec, plan, and tasks. Two outcomes:
+- **Gaps found** — new tasks get appended to `tasks.md`; `implement-shaktimaan`
+  runs those, then checks convergence again.
+- **Converged** — nothing left. The command finishes here, ready for
+  `/commit-push-shaktimaan`.
 
-- **Gaps found** — appends the remaining work as new tasks to `tasks.md`.
-  Go back to `/implement-shaktimaan`.
-- **Converged** — nothing left. Move on to `/commit-push-shaktimaan`.
+This is capped at 5 automatic rounds. If it's still finding gaps after
+5 rounds, it stops and reports what's still outstanding rather than
+looping forever — at that point, re-run `/implement-shaktimaan` yourself
+once you've looked into why, or investigate the recurring gap directly.
+
+You invoke this command once per feature slice — the inner
+implement↔converge loop is its own business, not something you drive by
+hand round by round.
+
+### `/converge-shaktimaan` — the convergence check, on its own
+
+This is what `/implement-shaktimaan` calls automatically at the end of
+each round, but it's also a standalone command — run it any time you want
+a convergence check without a full implementation pass (e.g. after making
+a manual code change, or just to see current status). Same two outcomes:
+gaps appended as new tasks to `tasks.md`, or a clean "✅ Converged" report
+with nothing modified.
 
 ### `/commit-push-shaktimaan` — ship it
 

@@ -31,8 +31,8 @@ All commands are Claude Code skills, one directory per command
 | `tasks-shaktimaan` | Generate a dependency-ordered tasks.md from the available design artifacts |
 | `analyze-shaktimaan` | Non-destructive cross-artifact consistency check across spec.md/plan.md/tasks.md |
 | `checklist-shaktimaan` | Generate a custom requirements-quality checklist for the current feature |
-| `implement-shaktimaan` | Execute tasks.md phase-by-phase, TDD-first, with progress tracking |
-| `converge-shaktimaan` | Assess the built code against spec/plan/tasks; append any remaining gap as new tasks |
+| `implement-shaktimaan` | Execute tasks.md phase-by-phase, TDD-first, with progress tracking; on completion, automatically loops with `converge-shaktimaan` until converged or a 5-round cap is hit |
+| `converge-shaktimaan` | Assess the built code against spec/plan/tasks; append any remaining gap as new tasks (invoked automatically by `implement-shaktimaan`'s convergence loop, and independently runnable on its own) |
 | `taskstoissues-shaktimaan` | Convert tasks.md into dependency-ordered GitHub issues |
 | `constitution-shaktimaan` | Create/update the project constitution (governing principles) |
 
@@ -66,9 +66,11 @@ requirements/tracker/specs signals originally scoped.
 **Overall intended usage flow** (for reference — this is guidance in each skill's own
 description, not a single orchestrating command): `shaktimaan init` → `new-requirements-shaktimaan`
 (once) → `constitution-shaktimaan` → `prioritise-next-shaktimaan` → `specify-shaktimaan` →
-`clarify-shaktimaan` (optional) → `plan-shaktimaan` → `tasks-shaktimaan` → `implement-shaktimaan`
-→ `converge-shaktimaan` (loops back to `implement-shaktimaan` if gaps remain, otherwise proceeds)
-→ `commit-push-shaktimaan`. Then back to `prioritise-next-shaktimaan` for the next slice.
+`clarify-shaktimaan` (optional) → `plan-shaktimaan` → `tasks-shaktimaan` → `implement-shaktimaan`,
+which automatically loops with `converge-shaktimaan` internally (re-running the newly appended
+tasks each round) until convergence reports clean or a 5-round safety cap is hit — then
+`commit-push-shaktimaan` is a separate, manual step. Then back to `prioritise-next-shaktimaan`
+for the next slice.
 
 ## Configurability (what makes this reusable, not tied to one project)
 
