@@ -1,6 +1,11 @@
+from pathlib import Path
+from typing import Optional
+
 import typer
 
 from shaktimaan import __version__
+from shaktimaan.config import collect_config
+from shaktimaan.installer import install_presets
 
 app = typer.Typer(
     name="shaktimaan",
@@ -26,6 +31,42 @@ def main_callback(
     ),
 ) -> None:
     """Shaktimaan: scaffold a spec-driven-development workflow into your project."""
+
+
+@app.command()
+def init(
+    directory: Path = typer.Argument(
+        Path("."), help="Target project directory (defaults to the current directory)."
+    ),
+    project_name: Optional[str] = typer.Option(None, "--project-name"),
+    requirements_file: Optional[str] = typer.Option(None, "--requirements-file"),
+    feature_tracker_file: Optional[str] = typer.Option(None, "--feature-tracker-file"),
+    requirements_status_file: Optional[str] = typer.Option(None, "--requirements-status-file"),
+    git_user_name: Optional[str] = typer.Option(None, "--git-user-name"),
+    git_user_email: Optional[str] = typer.Option(None, "--git-user-email"),
+) -> None:
+    """Scaffold the shaktimaan command set and .shaktimaan/ config into DIRECTORY."""
+    overrides = {
+        "project_name": project_name or "",
+        "requirements_file": requirements_file or "",
+        "feature_tracker_file": feature_tracker_file or "",
+        "requirements_status_file": requirements_status_file or "",
+        "git_user_name": git_user_name or "",
+        "git_user_email": git_user_email or "",
+    }
+
+    def prompt_fn(field_name: str, default: str) -> str:
+        from shaktimaan.config import FIELD_PROMPTS
+
+        return typer.prompt(FIELD_PROMPTS[field_name], default=default)
+
+    config = collect_config(overrides=overrides, prompt_fn=prompt_fn)
+
+    directory.mkdir(parents=True, exist_ok=True)
+    install_presets(directory, config)
+
+    typer.echo(f"Installed 17 shaktimaan commands into {directory / '.claude' / 'skills'}")
+    typer.echo(f"Config written to {directory / '.shaktimaan' / 'config.yml'}")
 
 
 def main() -> None:
