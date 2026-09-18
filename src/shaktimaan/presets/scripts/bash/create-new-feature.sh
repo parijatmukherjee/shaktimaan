@@ -266,12 +266,12 @@ else
 fi
 
 if [ -z "$BRANCH_SUFFIX" ]; then
-    echo "[specify] Warning: Feature name is empty after removing unsupported characters. Use --short-name with ASCII letters or digits (for example, user-auth)." >&2
+    echo "[shaktimaan] Warning: Feature name is empty after removing unsupported characters. Use --short-name with ASCII letters or digits (for example, user-auth)." >&2
 fi
 
 # Warn if --number and --timestamp are both specified
 if [ "$USE_TIMESTAMP" = true ] && [ -n "$BRANCH_NUMBER" ]; then
-    >&2 echo "[specify] Warning: --number is ignored when --timestamp is used"
+    >&2 echo "[shaktimaan] Warning: --number is ignored when --timestamp is used"
     BRANCH_NUMBER=""
 fi
 
@@ -327,7 +327,7 @@ else
                 FEATURE_NUM=$(printf "%03d" "$((10#$BRANCH_NUMBER))")
                 spec_prefix_exists "$SPECS_DIR" "$FEATURE_NUM" || break
             done
-            >&2 echo "[specify] Warning: --number $REQUESTED_NUM conflicts with an existing spec directory; using $FEATURE_NUM instead"
+            >&2 echo "[shaktimaan] Warning: --number $REQUESTED_NUM conflicts with an existing spec directory; using $FEATURE_NUM instead"
         fi
     fi
 
@@ -338,9 +338,9 @@ fi
 ORIGINAL_BRANCH_NAME="${FEATURE_NUM}-${BRANCH_SUFFIX}"
 BRANCH_NAME=$(fit_branch_name "$FEATURE_NUM" "$BRANCH_SUFFIX")
 if [ "$BRANCH_NAME" != "$ORIGINAL_BRANCH_NAME" ]; then
-    >&2 echo "[specify] Warning: Branch name exceeded GitHub's 244-byte limit"
-    >&2 echo "[specify] Original: $ORIGINAL_BRANCH_NAME (${#ORIGINAL_BRANCH_NAME} bytes)"
-    >&2 echo "[specify] Truncated to: $BRANCH_NAME (${#BRANCH_NAME} bytes)"
+    >&2 echo "[shaktimaan] Warning: Branch name exceeded GitHub's 244-byte limit"
+    >&2 echo "[shaktimaan] Original: $ORIGINAL_BRANCH_NAME (${#ORIGINAL_BRANCH_NAME} bytes)"
+    >&2 echo "[shaktimaan] Truncated to: $BRANCH_NAME (${#BRANCH_NAME} bytes)"
 fi
 
 FEATURE_DIR="$SPECS_DIR/$BRANCH_NAME"
@@ -387,8 +387,8 @@ if [ "$DRY_RUN" != true ]; then
     _persist_feature_json "$REPO_ROOT" "$FEATURE_DIR"
 
     # Inform the user how to set feature state in their own shell
-    printf '# To persist: export SPECIFY_FEATURE=%s\n' "$(shell_quote "$BRANCH_NAME")" >&2
-    printf '#              export SPECIFY_FEATURE_DIRECTORY=%s\n' "$(shell_quote "$FEATURE_DIR")" >&2
+    printf '# To persist: export SHAKTIMAAN_FEATURE=%s\n' "$(shell_quote "$BRANCH_NAME")" >&2
+    printf '#              export SHAKTIMAAN_FEATURE_DIRECTORY=%s\n' "$(shell_quote "$FEATURE_DIR")" >&2
 fi
 
 if $JSON_MODE; then
@@ -418,7 +418,7 @@ else
     echo "SPEC_FILE: $SPEC_FILE"
     echo "FEATURE_NUM: $FEATURE_NUM"
     if [ "$DRY_RUN" != true ]; then
-        printf '# To persist in your shell: export SPECIFY_FEATURE=%s\n' "$(shell_quote "$BRANCH_NAME")"
-        printf '#                           export SPECIFY_FEATURE_DIRECTORY=%s\n' "$(shell_quote "$FEATURE_DIR")"
+        printf '# To persist in your shell: export SHAKTIMAAN_FEATURE=%s\n' "$(shell_quote "$BRANCH_NAME")"
+        printf '#                           export SHAKTIMAAN_FEATURE_DIRECTORY=%s\n' "$(shell_quote "$FEATURE_DIR")"
     fi
 fi

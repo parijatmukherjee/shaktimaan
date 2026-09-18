@@ -3,7 +3,7 @@
 
 # Find repository root by searching upward for .shaktimaan directory
 # This is the primary marker for shaktimaan projects
-find_specify_root() {
+find_shaktimaan_root() {
     local dir="${1:-$(pwd)}"
     # Normalize to absolute path to prevent infinite loop with relative paths
     # Use -- to handle paths starting with - (e.g., -P, -L)
@@ -35,7 +35,7 @@ find_specify_root() {
 #
 # This is the single resolver: bundled extensions inherit it by sourcing core
 # (e.g. the git extension's create-new-feature-branch) rather than duplicating it.
-resolve_specify_init_dir() {
+resolve_shaktimaan_init_dir() {
     local init_root
     # Normalize: relative paths resolve against $(pwd); a trailing slash collapses.
     # CDPATH="" so a relative value cannot be resolved against the caller's CDPATH
@@ -54,16 +54,16 @@ resolve_specify_init_dir() {
 # Get repository root, prioritizing .shaktimaan directory
 # This prevents using a parent repository when shaktimaan is initialized in a subdirectory
 get_repo_root() {
-    # Explicit project override wins (see resolve_specify_init_dir).
+    # Explicit project override wins (see resolve_shaktimaan_init_dir).
     if [[ -n "${SHAKTIMAAN_INIT_DIR:-}" ]]; then
-        resolve_specify_init_dir
+        resolve_shaktimaan_init_dir
         return
     fi
 
     # First, look for .shaktimaan directory (shaktimaan's own marker)
-    local specify_root
-    if specify_root=$(find_specify_root); then
-        echo "$specify_root"
+    local shaktimaan_root
+    if shaktimaan_root=$(find_shaktimaan_root); then
+        echo "$shaktimaan_root"
         return
     fi
 
@@ -74,11 +74,11 @@ get_repo_root() {
 
 # Get current feature name from explicit state only.
 # Returns the feature identifier or empty string if none is set.
-# Feature state is set by SPECIFY_FEATURE (from create-new-feature or
+# Feature state is set by SHAKTIMAAN_FEATURE (from create-new-feature or
 # the git extension) or implicitly via .shaktimaan/feature.json.
 get_current_branch() {
-    if [[ -n "${SPECIFY_FEATURE:-}" ]]; then
-        echo "$SPECIFY_FEATURE"
+    if [[ -n "${SHAKTIMAAN_FEATURE:-}" ]]; then
+        echo "$SHAKTIMAAN_FEATURE"
         return
     fi
 
@@ -178,18 +178,18 @@ get_feature_paths() {
     current_branch=$(get_current_branch)
 
     # Resolve feature directory.  Priority:
-    #   1. SPECIFY_FEATURE_DIRECTORY env var (explicit override)
-    #   2. .shaktimaan/feature.json "feature_directory" key (persisted by specify command)
+    #   1. SHAKTIMAAN_FEATURE_DIRECTORY env var (explicit override)
+    #   2. .shaktimaan/feature.json "feature_directory" key (persisted by shaktimaan command)
     #   3. Error — no feature context available
     local feature_dir
-    if [[ -n "${SPECIFY_FEATURE_DIRECTORY:-}" ]]; then
-        feature_dir="$SPECIFY_FEATURE_DIRECTORY"
+    if [[ -n "${SHAKTIMAAN_FEATURE_DIRECTORY:-}" ]]; then
+        feature_dir="$SHAKTIMAAN_FEATURE_DIRECTORY"
         # Normalize relative paths to absolute under repo root
         [[ "$feature_dir" != /* ]] && feature_dir="$repo_root/$feature_dir"
         # Persist to feature.json so future sessions without the env var still
         # work — unless the caller opted out for read-only resolution (#3025).
         if [[ "$no_persist" != true ]]; then
-            _persist_feature_json "$repo_root" "$SPECIFY_FEATURE_DIRECTORY"
+            _persist_feature_json "$repo_root" "$SHAKTIMAAN_FEATURE_DIRECTORY"
         fi
     elif [[ -f "$repo_root/.shaktimaan/feature.json" ]]; then
         local _fd
@@ -199,16 +199,16 @@ get_feature_paths() {
             # Normalize relative paths to absolute under repo root
             [[ "$feature_dir" != /* ]] && feature_dir="$repo_root/$feature_dir"
         else
-            echo "ERROR: Feature directory not found. Set SPECIFY_FEATURE_DIRECTORY or ensure .shaktimaan/feature.json contains feature_directory." >&2
+            echo "ERROR: Feature directory not found. Set SHAKTIMAAN_FEATURE_DIRECTORY or ensure .shaktimaan/feature.json contains feature_directory." >&2
             return 1
         fi
     else
-        echo "ERROR: Feature directory not found. Set SPECIFY_FEATURE_DIRECTORY or run the specify command to create .shaktimaan/feature.json." >&2
+        echo "ERROR: Feature directory not found. Set SHAKTIMAAN_FEATURE_DIRECTORY or run the shaktimaan command to create .shaktimaan/feature.json." >&2
         return 1
     fi
 
-    # When no branch context exists (no SPECIFY_FEATURE, feature resolved via
-    # SPECIFY_FEATURE_DIRECTORY or feature.json), fall back to the feature
+    # When no branch context exists (no SHAKTIMAAN_FEATURE, feature resolved via
+    # SHAKTIMAAN_FEATURE_DIRECTORY or feature.json), fall back to the feature
     # directory basename so CURRENT_BRANCH is a usable identifier rather than
     # an empty, misleading value (issue #3026).
     if [[ -z "$current_branch" ]]; then
@@ -237,8 +237,8 @@ has_jq() {
 
 get_invoke_separator() {
     local repo_root="${1:-$(get_repo_root)}"
-    if [[ "${_SPECIFY_INVOKE_SEPARATOR_CACHE_REPO_ROOT:-}" == "$repo_root" && -n "${_SPECIFY_INVOKE_SEPARATOR_CACHE_VALUE:-}" ]]; then
-        printf '%s\n' "$_SPECIFY_INVOKE_SEPARATOR_CACHE_VALUE"
+    if [[ "${_SHAKTIMAAN_INVOKE_SEPARATOR_CACHE_REPO_ROOT:-}" == "$repo_root" && -n "${_SHAKTIMAAN_INVOKE_SEPARATOR_CACHE_VALUE:-}" ]]; then
+        printf '%s\n' "$_SHAKTIMAAN_INVOKE_SEPARATOR_CACHE_VALUE"
         return 0
     fi
 
@@ -342,8 +342,8 @@ PY
         fi
     fi
 
-    _SPECIFY_INVOKE_SEPARATOR_CACHE_REPO_ROOT="$repo_root"
-    _SPECIFY_INVOKE_SEPARATOR_CACHE_VALUE="$separator"
+    _SHAKTIMAAN_INVOKE_SEPARATOR_CACHE_REPO_ROOT="$repo_root"
+    _SHAKTIMAAN_INVOKE_SEPARATOR_CACHE_VALUE="$separator"
     printf '%s\n' "$separator"
 }
 
@@ -351,12 +351,12 @@ format_speckit_command() {
     local command_name="$1"
     local repo_root="${2:-$(get_repo_root)}"
     local separator
-    if [[ "${_SPECIFY_INVOKE_SEPARATOR_CACHE_REPO_ROOT:-}" == "$repo_root" && -n "${_SPECIFY_INVOKE_SEPARATOR_CACHE_VALUE:-}" ]]; then
-        separator="$_SPECIFY_INVOKE_SEPARATOR_CACHE_VALUE"
+    if [[ "${_SHAKTIMAAN_INVOKE_SEPARATOR_CACHE_REPO_ROOT:-}" == "$repo_root" && -n "${_SHAKTIMAAN_INVOKE_SEPARATOR_CACHE_VALUE:-}" ]]; then
+        separator="$_SHAKTIMAAN_INVOKE_SEPARATOR_CACHE_VALUE"
     else
         separator=$(get_invoke_separator "$repo_root")
-        _SPECIFY_INVOKE_SEPARATOR_CACHE_REPO_ROOT="$repo_root"
-        _SPECIFY_INVOKE_SEPARATOR_CACHE_VALUE="$separator"
+        _SHAKTIMAAN_INVOKE_SEPARATOR_CACHE_REPO_ROOT="$repo_root"
+        _SHAKTIMAAN_INVOKE_SEPARATOR_CACHE_VALUE="$separator"
     fi
 
     command_name="${command_name#/}"
