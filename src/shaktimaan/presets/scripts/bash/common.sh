@@ -203,7 +203,7 @@ get_feature_paths() {
             return 1
         fi
     else
-        echo "ERROR: Feature directory not found. Set SHAKTIMAAN_FEATURE_DIRECTORY or run the shaktimaan command to create .shaktimaan/feature.json." >&2
+        echo "ERROR: Feature directory not found. Set SHAKTIMAAN_FEATURE_DIRECTORY or run /specify-shaktimaan to create .shaktimaan/feature.json." >&2
         return 1
     fi
 
