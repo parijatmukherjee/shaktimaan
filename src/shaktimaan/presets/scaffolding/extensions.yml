@@ -1,0 +1,110 @@
+# Extension hooks for shaktimaan commands.
+#
+# These wire the requirements-tracking bundle into the spec lifecycle so
+# requirements_status_file and feature_tracker_file (see .shaktimaan/config.yml)
+# stay current without needing to be run by hand after every
+# specify-shaktimaan, implement-shaktimaan, or converge-shaktimaan.
+
+hooks:
+  after_specify:
+    - extension: requirements-tracking
+      command: requirements-sync-shaktimaan
+      optional: false
+      description: >-
+        Trace the new/updated spec's requirement IDs against the
+        requirements file and update the requirements-status file.
+      prompt: >-
+        A spec was just created or updated. Use the requirements-sync-shaktimaan
+        skill to trace this spec's requirement IDs against requirements_file
+        and update requirements_status_file. If the spec implies behavior
+        with no matching requirement, stop and flag it rather than
+        inventing a mapping.
+    - extension: requirements-tracking
+      command: feature-tracker-shaktimaan
+      optional: false
+      description: >-
+        Roll the feature area(s) covering this spec's requirement IDs
+        forward in the feature tracker.
+      prompt: >-
+        Use the feature-tracker-shaktimaan skill to roll the feature
+        area(s) that own the requirement IDs just traced forward in
+        feature_tracker_file — typically Not Started to In Progress the
+        first time a spec targets that area. Do not mark any area
+        Delivered at this stage.
+
+  after_implement:
+    - extension: requirements-tracking
+      command: requirements-sync-shaktimaan
+      optional: false
+      description: >-
+        Re-check which requirement IDs this spec's completed tasks
+        actually deliver, and update the requirements-status file.
+      prompt: >-
+        Implementation tasks for this feature's spec were just executed.
+        Use the requirements-sync-shaktimaan skill to re-check
+        requirements_status_file against which requirement IDs this spec
+        delivers. Mark an ID Done only if you can verify it's implemented
+        and passing its acceptance scenario(s) — tasks.md showing complete
+        is not by itself verification.
+    - extension: requirements-tracking
+      command: feature-tracker-shaktimaan
+      optional: false
+      description: >-
+        Roll the feature tracker forward for any feature area now fully
+        delivered.
+      prompt: >-
+        Use the feature-tracker-shaktimaan skill to roll feature_tracker_file
+        forward for any feature area now fully delivered at MVP or Full
+        level. Leave areas only partially covered by this spec as In
+        Progress.
+
+  after_converge:
+    - extension: requirements-tracking
+      command: requirements-sync-shaktimaan
+      optional: false
+      description: >-
+        Reconcile the requirements-status file against the convergence
+        outcome.
+      prompt: >-
+        converge-shaktimaan just assessed this feature's implementation
+        against its spec, plan, and tasks. If the outcome was "converged"
+        (no remaining gaps), use requirements-sync-shaktimaan to confirm
+        requirements_status_file marks this spec's requirement IDs Done.
+        If tasks were instead appended to tasks.md, leave status as In
+        Progress.
+    - extension: requirements-tracking
+      command: feature-tracker-shaktimaan
+      optional: false
+      description: >-
+        Roll the feature tracker forward for any feature area convergence
+        confirms is fully delivered.
+      prompt: >-
+        Use feature-tracker-shaktimaan to roll feature_tracker_file
+        forward for any feature area this convergence run confirms is now
+        fully delivered.
+
+  after_tasks:
+    - extension: requirements-tracking
+      command: feature-tracker-shaktimaan
+      optional: true
+      description: >-
+        Optional early status check — tasks.md was (re)generated but not
+        yet executed, so this is a preview, not a delivery signal.
+      prompt: >-
+        tasks.md was just (re)generated for this feature. This is
+        optional: if you want a status preview now rather than waiting for
+        implement-shaktimaan or converge-shaktimaan, run
+        requirements-sync-shaktimaan followed by feature-tracker-shaktimaan.
+        Do not mark anything Done or Delivered from tasks.md alone.
+
+  before_commit_push:
+    - extension: readme-sync
+      command: readme-shaktimaan
+      optional: false
+      description: >-
+        Refresh README.md's badges, setup instructions, and feature-status
+        table before this commit is created.
+      prompt: >-
+        About to stage and commit changes via commit-push-shaktimaan. Use
+        the readme-shaktimaan skill to refresh README.md before anything
+        is staged.
