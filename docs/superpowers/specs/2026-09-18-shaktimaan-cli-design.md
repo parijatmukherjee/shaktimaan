@@ -36,7 +36,7 @@ All commands are Claude Code skills, one directory per command
 | `taskstoissues-shaktimaan` | Convert tasks.md into dependency-ordered GitHub issues |
 | `constitution-shaktimaan` | Create/update the project constitution (governing principles) |
 
-**Jarvis originals, folded in as core:**
+**Original additions, folded in as core:**
 
 | Command | Purpose |
 |---|---|
@@ -54,18 +54,19 @@ All commands are Claude Code skills, one directory per command
 
 16 commands total.
 
-## Configurability (what makes this reusable, not jarvis-specific)
+## Configurability (what makes this reusable, not tied to one project)
 
-Everything that was a hardcoded jarvis path becomes an `init`-time prompt,
-written to a per-project config file the installed skills read at runtime:
+Every path or identity that was hardcoded in the original source material
+becomes an `init`-time prompt, written to a per-project config file the
+installed skills read at runtime:
 
-| Config key | Was hardcoded as | Prompted at init |
-|---|---|---|
-| `requirements_file` | `requirements/jarvis-requirements.md` | path to the project's PRD |
-| `feature_tracker_file` | `requirements/jarvis-feature-tracker.md` | path to the feature-tracker file |
-| `requirements_status_file` | `docs/REQUIREMENTS-STATUS.md` | path to the per-ID status file |
-| `git_user_name` / `git_user_email` | `Parijat Mukherjee` / `parijat_mukherjee@live.com` | the commit identity `commit-push-shaktimaan` verifies before committing |
-| `project_name` | "Jarvis" | used in generated template headers |
+| Config key | Prompted at init |
+|---|---|
+| `requirements_file` | path to the project's PRD |
+| `feature_tracker_file` | path to the feature-tracker file |
+| `requirements_status_file` | path to the per-ID status file |
+| `git_user_name` / `git_user_email` | the commit identity `commit-push-shaktimaan` verifies before committing |
+| `project_name` | used in generated template headers |
 
 Config lands in `.shaktimaan/config.yml` in the target project (see below).
 Skills read it at run time rather than baking values into rendered
@@ -145,5 +146,5 @@ on).
 - `shaktimaan upgrade` / `shaktimaan check` (spec-kit parity commands).
 - Publishing to PyPI (local `uv tool install` from the repo is enough
   until there's a second real consumer).
-- Migrating jarvis itself onto shaktimaan (separate follow-up task, not
-  part of this repo).
+- Migrating any specific existing project onto shaktimaan (a separate,
+  private follow-up, not part of this repo).
