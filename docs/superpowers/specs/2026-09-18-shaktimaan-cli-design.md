@@ -47,12 +47,28 @@ All commands are Claude Code skills, one directory per command
 
 | Command | Purpose |
 |---|---|
+| `new-requirements-shaktimaan` | First-time bootstrap: interactively elicit requirements (clarifying questions), write the initial versioned requirements file (v1.0.0), and seed the feature-tracker file's initial feature-area breakdown |
 | `requirements-sync-shaktimaan` | Trace a spec's requirement IDs against the PRD, keep a per-ID delivery-status file current |
 | `feature-tracker-shaktimaan` | Roll per-ID status up into a feature-area-level status snapshot |
-| `requirements-shaktimaan` | Add/edit/reconcile requirements in the single consolidated PRD file |
+| `requirements-shaktimaan` | Add/edit/reconcile requirements in the single consolidated PRD file (ongoing maintenance, after `new-requirements-shaktimaan` has created it) |
 | `readme-shaktimaan` | Keep the target project's README.md (badges, setup instructions, feature-status table) current — typically wired as a `before_commit_push` hook |
 
-16 commands total.
+17 commands total.
+
+**`prioritise-next-shaktimaan` reads two more inputs than originally scoped:** the project
+constitution (`.shaktimaan/memory/constitution.md`, if `constitution-shaktimaan` has been run)
+and any `specs/*/research.md` files from prior `plan-shaktimaan` runs. Rationale: a constitution
+principle can reorder priority (e.g. a "security first" principle bumping a security-related
+area up), and prior research findings can surface technical constraints on what's actually
+buildable next — both are legitimate inputs to "what should we build next," not just the
+requirements/tracker/specs signals originally scoped.
+
+**Overall intended usage flow** (for reference — this is guidance in each skill's own
+description, not a single orchestrating command): `shaktimaan init` → `new-requirements-shaktimaan`
+(once) → `constitution-shaktimaan` → `prioritise-next-shaktimaan` → `specify-shaktimaan` →
+`clarify-shaktimaan` (optional) → `plan-shaktimaan` → `tasks-shaktimaan` → `implement-shaktimaan`
+→ `converge-shaktimaan` (loops back to `implement-shaktimaan` if gaps remain, otherwise proceeds)
+→ `commit-push-shaktimaan`. Then back to `prioritise-next-shaktimaan` for the next slice.
 
 ## Configurability (what makes this reusable, not tied to one project)
 
@@ -78,7 +94,7 @@ re-render.
 Mirrors spec-kit's own install shape, renamed:
 
 ```
-.claude/skills/<command>-shaktimaan/SKILL.md   # 16 command skills
+.claude/skills/<command>-shaktimaan/SKILL.md   # 17 command skills
 .shaktimaan/
   config.yml            # per-project config (table above)
   extensions.yml         # before_/after_ hook registrations (same mechanism as .specify/extensions.yml today)
@@ -99,7 +115,7 @@ directory — consistent with fully disconnecting from spec-kit naming.
 - Install: `uv tool install shaktimaan-cli` (same ergonomics as
   `specify-cli` today).
 - `shaktimaan init [DIR]`: prompts for the config table above (or takes
-  flags for non-interactive use), renders/copies the 16 skill directories
+  flags for non-interactive use), renders/copies the 17 skill directories
   and `.shaktimaan/` scaffolding into `DIR` (defaults to `.`).
 - `shaktimaan init` is the only command needed for v1. Spec-kit's own
   `upgrade`/`check` equivalents are explicitly deferred — not needed until
@@ -114,7 +130,7 @@ src/shaktimaan/
   config.py               # config prompt + .shaktimaan/config.yml read/write
   render.py                # template placeholder substitution
   presets/
-    core/                  # the 16 command templates (SKILL.md + frontmatter), as Jinja-ish templates with {{PLACEHOLDER}} tokens
+    core/                  # the 17 command templates (SKILL.md + frontmatter), as Jinja-ish templates with {{PLACEHOLDER}} tokens
     scripts/                # bash helpers copied verbatim into .shaktimaan/scripts/
 tests/
 LICENSE
