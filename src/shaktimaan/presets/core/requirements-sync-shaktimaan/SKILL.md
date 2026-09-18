@@ -34,6 +34,7 @@ skill keeps the two connected without letting either drift silently out of sync.
 Create lazily — only rows for IDs some spec has actually touched. Table columns:
 
 | ID | Requirement (short) | Status | Spec | Notes |
+|---|---|---|---|---|
 
 - **Status** is one of: `Not Started`, `In Progress`, `Done`, `Blocked`.
 - **Spec** links to `specs/<NNN>-<slug>/spec.md` (relative path).
