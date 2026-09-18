@@ -1,0 +1,31 @@
+[project]
+name = "shaktimaan-cli"
+version = "0.1.0"
+description = "A personal Spec-Driven Development (SDD) CLI toolkit for Claude Code."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Parijat Mukherjee" }]
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.12",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+shaktimaan = "shaktimaan.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/shaktimaan"]
+exclude = ["src/shaktimaan/presets"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/shaktimaan/presets" = "shaktimaan/presets"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]

@@ -1,2 +1,9 @@
 .worktrees/
 .superpowers/
+__pycache__/
+*.pyc
+.venv/
+dist/
+*.egg-info/
+.pytest_cache/
+uv.lock
