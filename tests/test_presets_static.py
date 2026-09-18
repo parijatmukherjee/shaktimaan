@@ -37,3 +37,12 @@ def test_no_leftover_specify_references_in_scripts():
         text = (PRESETS / "scripts" / "bash" / name).read_text()
         assert ".specify" not in text, f"{name} still references .specify"
         assert "Spec Kit" not in text, f"{name} still says 'Spec Kit'"
+
+
+def test_no_leftover_speckit_references_in_scripts():
+    for name in SCRIPTS:
+        text = (PRESETS / "scripts" / "bash" / name).read_text()
+        assert "speckit" not in text.lower(), (
+            f"{name} still contains a 'speckit' reference (case-insensitive) "
+            "left over from the upstream port"
+        )

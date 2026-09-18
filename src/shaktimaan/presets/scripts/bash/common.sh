@@ -347,26 +347,6 @@ PY
     printf '%s\n' "$separator"
 }
 
-format_speckit_command() {
-    local command_name="$1"
-    local repo_root="${2:-$(get_repo_root)}"
-    local separator
-    if [[ "${_SHAKTIMAAN_INVOKE_SEPARATOR_CACHE_REPO_ROOT:-}" == "$repo_root" && -n "${_SHAKTIMAAN_INVOKE_SEPARATOR_CACHE_VALUE:-}" ]]; then
-        separator="$_SHAKTIMAAN_INVOKE_SEPARATOR_CACHE_VALUE"
-    else
-        separator=$(get_invoke_separator "$repo_root")
-        _SHAKTIMAAN_INVOKE_SEPARATOR_CACHE_REPO_ROOT="$repo_root"
-        _SHAKTIMAAN_INVOKE_SEPARATOR_CACHE_VALUE="$separator"
-    fi
-
-    command_name="${command_name#/}"
-    command_name="${command_name#speckit.}"
-    command_name="${command_name#speckit-}"
-    command_name="${command_name//./$separator}"
-
-    printf '/speckit%s%s\n' "$separator" "$command_name"
-}
-
 # Escape a string for safe embedding in a JSON value (fallback when jq is unavailable).
 # Handles backslash, double-quote, and JSON-required control character escapes (RFC 8259).
 json_escape() {
@@ -421,11 +401,11 @@ _sorted_extension_ids() {
         read -r -a python_cmd <<< "$python_spec"
         local py_stderr sorted_ids
         py_stderr=$(mktemp)
-        if sorted_ids=$(SPECKIT_EXTENSIONS="$ext_dir" "${python_cmd[@]}" -c "
+        if sorted_ids=$(SHAKTIMAAN_EXTENSIONS="$ext_dir" "${python_cmd[@]}" -c "
 import json, os, re, sys
 from pathlib import Path
 
-root = Path(os.environ['SPECKIT_EXTENSIONS'])
+root = Path(os.environ['SHAKTIMAAN_EXTENSIONS'])
 registered = {}
 registry = root / '.registry'
 if os.path.lexists(registry):
@@ -523,10 +503,10 @@ resolve_template() {
             # The python3 call is wrapped in an if-condition so that set -e does not
             # abort the function when python3 exits non-zero (e.g. invalid JSON).
             local sorted_presets=""
-            if sorted_presets=$(SPECKIT_REGISTRY="$registry_file" "${python_cmd[@]}" -c "
+            if sorted_presets=$(SHAKTIMAAN_REGISTRY="$registry_file" "${python_cmd[@]}" -c "
 import json, re, sys, os
 try:
-    with open(os.environ['SPECKIT_REGISTRY'], encoding='utf-8') as f:
+    with open(os.environ['SHAKTIMAAN_REGISTRY'], encoding='utf-8') as f:
         data = json.load(f)
     presets = data.get('presets', {})
     def priority(meta):
@@ -642,10 +622,10 @@ resolve_template_content() {
             read -r -a python_cmd <<< "$python_spec"
         fi
         if [ -f "$registry_file" ] && [ "${#python_cmd[@]}" -gt 0 ]; then
-            if sorted_presets=$(SPECKIT_REGISTRY="$registry_file" "${python_cmd[@]}" -c "
+            if sorted_presets=$(SHAKTIMAAN_REGISTRY="$registry_file" "${python_cmd[@]}" -c "
 import json, re, sys, os
 try:
-    with open(os.environ['SPECKIT_REGISTRY'], encoding='utf-8') as f:
+    with open(os.environ['SHAKTIMAAN_REGISTRY'], encoding='utf-8') as f:
         data = json.load(f)
     presets = data.get('presets', {})
     def priority(meta):
@@ -690,7 +670,7 @@ except Exception:
                     local py_stderr
                     local parse_status
                     py_stderr=$(mktemp)
-                    if result=$(SPECKIT_MANIFEST="$manifest" SPECKIT_TMPL="$template_name" "${python_cmd[@]}" -c "
+                    if result=$(SHAKTIMAAN_MANIFEST="$manifest" SHAKTIMAAN_TMPL="$template_name" "${python_cmd[@]}" -c "
 import sys, os
 try:
     import yaml
@@ -698,7 +678,7 @@ except ImportError:
     print('yaml_missing', file=sys.stderr)
     sys.exit(2)
 try:
-    with open(os.environ['SPECKIT_MANIFEST'], encoding='utf-8') as f:
+    with open(os.environ['SHAKTIMAAN_MANIFEST'], encoding='utf-8') as f:
         data = yaml.safe_load(f)
     if not isinstance(data, dict):
         raise ValueError('manifest root must be a mapping')
@@ -735,7 +715,7 @@ try:
         if t['type'] == 'script' and strategy not in ('replace', 'wrap'):
             raise ValueError('invalid manifest script strategy')
     for t in templates:
-        if t.get('name') == os.environ['SPECKIT_TMPL'] and t.get('type', 'template') == 'template':
+        if t.get('name') == os.environ['SHAKTIMAAN_TMPL'] and t.get('type', 'template') == 'template':
             file_value = t.get('file', '')
             strategy = t.get('strategy', 'replace')
             print('found\t' + strategy + '\t' + file_value)
