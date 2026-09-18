@@ -1,6 +1,13 @@
 import pytest
 
-from shaktimaan.config import ConfigError, ShaktimaanConfig, collect_config, load_config, save_config
+from shaktimaan.config import (
+    FIELD_DEFAULTS,
+    ConfigError,
+    ShaktimaanConfig,
+    collect_config,
+    load_config,
+    save_config,
+)
 
 SAMPLE = ShaktimaanConfig(
     project_name="Example",
@@ -49,6 +56,7 @@ def test_collect_config_prompts_for_every_missing_field():
 
     def fake_prompt(field_name: str, default: str) -> str:
         prompted_fields.append(field_name)
+        assert default == FIELD_DEFAULTS[field_name]
         return DEFAULTS[field_name] or "placeholder"
 
     config = collect_config(overrides={}, prompt_fn=fake_prompt)

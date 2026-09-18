@@ -73,11 +73,13 @@ FIELD_DEFAULTS = {
 def collect_config(
     overrides: dict[str, str],
     prompt_fn: Callable[[str, str], str],
+    defaults: dict[str, str] | None = None,
 ) -> ShaktimaanConfig:
+    field_defaults = defaults if defaults is not None else FIELD_DEFAULTS
     values: dict[str, str] = {}
     for field in CONFIG_FIELDS:
         if field in overrides:
             values[field] = overrides[field]
         else:
-            values[field] = prompt_fn(field, FIELD_DEFAULTS[field])
+            values[field] = prompt_fn(field, field_defaults[field])
     return ShaktimaanConfig(**values)

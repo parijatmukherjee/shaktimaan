@@ -40,3 +40,16 @@ def test_install_presets_is_idempotent(tmp_path):
 
     skills_dir = tmp_path / ".claude" / "skills"
     assert len(list(skills_dir.iterdir())) == 17
+
+
+def test_install_presets_does_not_clobber_user_edited_extensions_yml(tmp_path):
+    install_presets(tmp_path, SAMPLE_CONFIG)
+
+    extensions_path = tmp_path / ".shaktimaan" / "extensions.yml"
+    customization = "# user customization: do not overwrite me\n"
+    original = extensions_path.read_text()
+    extensions_path.write_text(customization + original)
+
+    install_presets(tmp_path, SAMPLE_CONFIG)  # re-run, e.g. via `shaktimaan init` again
+
+    assert extensions_path.read_text() == customization + original

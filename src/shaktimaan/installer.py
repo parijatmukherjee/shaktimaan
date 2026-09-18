@@ -29,9 +29,11 @@ def install_presets(target_dir: Path, config: ShaktimaanConfig) -> None:
     shutil.copytree(
         presets / "templates", shaktimaan_dir / "templates", dirs_exist_ok=True
     )
-    shutil.copy2(
-        presets / "scaffolding" / "extensions.yml",
-        shaktimaan_dir / "extensions.yml",
-    )
+    extensions_dest = shaktimaan_dir / "extensions.yml"
+    if not extensions_dest.exists():
+        shutil.copy2(
+            presets / "scaffolding" / "extensions.yml",
+            extensions_dest,
+        )
 
     save_config(config, shaktimaan_dir / "config.yml")

@@ -4,7 +4,7 @@ from typing import Optional
 import typer
 
 from shaktimaan import __version__
-from shaktimaan.config import collect_config
+from shaktimaan.config import CONFIG_FIELDS, ConfigError, FIELD_DEFAULTS, collect_config, load_config
 from shaktimaan.installer import install_presets
 
 app = typer.Typer(
@@ -56,12 +56,24 @@ def init(
     }
     overrides = {k: v for k, v in raw.items() if v is not None}
 
+    existing_config_path = directory / ".shaktimaan" / "config.yml"
+    if existing_config_path.exists():
+        try:
+            existing_config = load_config(existing_config_path)
+            defaults = {field: getattr(existing_config, field) for field in CONFIG_FIELDS}
+        except ConfigError:
+            # Existing config is missing/malformed; fall back to the blank defaults
+            # rather than failing `init`, which is also how a first-time install prompts.
+            defaults = dict(FIELD_DEFAULTS)
+    else:
+        defaults = dict(FIELD_DEFAULTS)
+
     def prompt_fn(field_name: str, default: str) -> str:
         from shaktimaan.config import FIELD_PROMPTS
 
         return typer.prompt(FIELD_PROMPTS[field_name], default=default)
 
-    config = collect_config(overrides=overrides, prompt_fn=prompt_fn)
+    config = collect_config(overrides=overrides, prompt_fn=prompt_fn, defaults=defaults)
 
     directory.mkdir(parents=True, exist_ok=True)
     install_presets(directory, config)

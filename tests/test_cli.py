@@ -97,3 +97,47 @@ def test_init_prompts_for_omitted_flags(tmp_path, monkeypatch):
     assert config_data["project_name"] == "Example"
     for field in omitted_fields:
         assert config_data[field] == "PROMPTED-VALUE"
+
+
+def test_init_rerun_prefills_prompts_from_existing_config(tmp_path, monkeypatch):
+    from shaktimaan.config import FIELD_PROMPTS
+
+    target = tmp_path / "my-project"
+    target.mkdir()
+
+    # First init, fully non-interactive, to establish an existing config.yml.
+    first = runner.invoke(
+        app,
+        [
+            "init",
+            str(target),
+            "--project-name", "Existing Project",
+            "--requirements-file", "reqs/requirements.md",
+            "--feature-tracker-file", "reqs/feature-tracker.md",
+            "--requirements-status-file", "reqs/STATUS.md",
+            "--git-user-name", "Ada Lovelace",
+            "--git-user-email", "ada@example.com",
+        ],
+    )
+    assert first.exit_code == 0, first.stdout
+
+    prompt_calls = []
+
+    def fake_prompt(text, default=None):
+        prompt_calls.append((text, default))
+        return default
+
+    monkeypatch.setattr("shaktimaan.cli.typer.prompt", fake_prompt)
+
+    # Re-run init with every flag omitted so every field falls back to a prompt.
+    second = runner.invoke(app, ["init", str(target)])
+
+    assert second.exit_code == 0, second.stdout
+
+    prompts_by_text = {text: default for text, default in prompt_calls}
+    assert prompts_by_text[FIELD_PROMPTS["project_name"]] == "Existing Project"
+    assert prompts_by_text[FIELD_PROMPTS["requirements_file"]] == "reqs/requirements.md"
+    assert prompts_by_text[FIELD_PROMPTS["feature_tracker_file"]] == "reqs/feature-tracker.md"
+    assert prompts_by_text[FIELD_PROMPTS["requirements_status_file"]] == "reqs/STATUS.md"
+    assert prompts_by_text[FIELD_PROMPTS["git_user_name"]] == "Ada Lovelace"
+    assert prompts_by_text[FIELD_PROMPTS["git_user_email"]] == "ada@example.com"
